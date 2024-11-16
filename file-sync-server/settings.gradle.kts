@@ -1,1 +1,1 @@
-rootProject.name = "com.osaaka.file-sync"
+rootProject.name = "file-sync-server"

@@ -25,6 +25,7 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
+    implementation(project(":file-sync-shared"))
     implementation("io.insert-koin:koin-ktor:3.4.0")
     implementation("io.ktor:ktor-server-websockets:3.0.1")
     testImplementation(libs.ktor.server.test.host)
