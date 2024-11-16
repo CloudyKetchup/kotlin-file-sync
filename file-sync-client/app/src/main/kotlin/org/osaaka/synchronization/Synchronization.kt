@@ -19,11 +19,11 @@ import org.osaaka.models.DirectoryNodesResponse
 
 val ignoreFiles = listOf("node_modules")
 
-fun buildProgressBar(progress: Int): String {
+fun buildProgressBar(progress: Int, currentFile: String): String {
     val progressBarLength = 50
     val filledLength = (progressBarLength * progress) / 100
     val bar = "=".repeat(filledLength) + ">" + " ".repeat(progressBarLength - filledLength)
-    return "[$bar] $progress%"
+    return "Uploading $currentFile... \n [$bar] $progress%"
 }
 
 class Synchronization(private val syncFolder: String) {
@@ -52,7 +52,7 @@ class Synchronization(private val syncFolder: String) {
         ) {
             files.forEachIndexed { index, filePath ->
                 val substringPath = filePath.substringAfter(syncFolder)
-                println("Sending file $substringPath...")
+                // println("\r Sending file $substringPath...")
                 val file = File(filePath)
 
                 if (file.length() == 0.toLong()) {
@@ -75,7 +75,7 @@ class Synchronization(private val syncFolder: String) {
                 // Calculate the progress percentage
                 val progress = (index + 1) * 100 / totalFiles
                 // Build the progress bar
-                val progressBar = buildProgressBar(progress)
+                val progressBar = buildProgressBar(progress, substringPath)
 
                 // Display the progress bar
                 print("\r$progressBar [$index/$totalFiles]")
