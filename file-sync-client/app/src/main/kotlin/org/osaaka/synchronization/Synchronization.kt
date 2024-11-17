@@ -14,8 +14,12 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.close
 import java.io.File
 import java.nio.file.Files
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import kotlinx.serialization.json.Json
 import org.osaaka.models.DirectoryNodesResponse
+import org.osaaka.models.DirectoryTreeNode
+import org.osaaka.extensions.basicFileAttributes
 
 val ignoreFiles = listOf("node_modules")
 
@@ -41,7 +45,7 @@ class Synchronization(private val syncFolder: String) {
         }
     }
 
-    private suspend fun sendFiles(files: List<String>) {
+    private suspend fun uploadFiles(files: List<String>) {
         val totalFiles = files.size
 
         httpClient.webSocket(
@@ -52,7 +56,7 @@ class Synchronization(private val syncFolder: String) {
         ) {
             files.forEachIndexed { index, filePath ->
                 val substringPath = filePath.substringAfter(syncFolder)
-                // println("\r Sending file $substringPath...")
+                println("\r Sending file $substringPath...")
                 val file = File(filePath)
 
                 if (file.length() == 0.toLong()) {
@@ -77,24 +81,28 @@ class Synchronization(private val syncFolder: String) {
                 // Build the progress bar
                 val progressBar = buildProgressBar(progress, substringPath)
 
-                // Display the progress bar
-                print("\r$progressBar [$index/$totalFiles]")
+                // // Display the progress bar
+                // print("\r$progressBar [$index/$totalFiles]")
             }
-            println("All files synced successfully")
+            println("\nAll files synced")
             close()
         }
     }
+    
+    private suspend fun pullFiles() {
 
-    private fun directoryFilesList(): List<String> {
-        val files = mutableListOf<String>()
+    }
 
-        fun iterateFiles(directory: File, files: MutableList<String>) {
+    private fun directoryFilesList(): List<File> {
+        val files = mutableListOf<File>()
+
+        fun iterateFiles(directory: File, files: MutableList<File>) {
             directory.listFiles().forEach { file ->
                 if (!ignoreFiles.contains(file.name)) {
                     if (file.isDirectory) {
                         iterateFiles(file, files)
                     } else if (file.isFile) {
-                        files.add(file.path)
+                        files.add(file)
                     }
                 }
             }
@@ -105,18 +113,47 @@ class Synchronization(private val syncFolder: String) {
         return files
     }
 
-    private suspend fun remoteLocalCompare(): List<String> {
-        val remote: DirectoryNodesResponse = httpClient.get("/tree").body()
-        val local = directoryFilesList()
+    private suspend fun localFilesForUpload(
+        localFiles: List<File>,
+        remoteFiles: List<DirectoryTreeNode>
+    ): List<File> {
+        fun localNewerThanRemote(local: File, remote: DirectoryTreeNode?): Boolean {
+            val timeFormatter = DateTimeFormatter.ISO_DATE_TIME
+            val localAttributes = local.basicFileAttributes()
+            val localModified = ZonedDateTime.parse(localAttributes.lastModifiedTime().toString(), timeFormatter)
+            val remoteModified = ZonedDateTime.parse(remote.dateModified, timeFormatter)
 
-        val remoteFiles = remote.files.map { it.path }
-        val filesForSync = local.filterNot { it.substringAfter(syncFolder) in remoteFiles }
+            return localModified.isAfter(remoteModified)
+        }
 
-        return filesForSync
+        val filesForUpload = localFiles.filter { local ->
+            // find the file on remote, null if not found
+            val remote = remoteFiles.find { remote -> remote.path == local.path.substringAfter(syncFolder) }
+
+            (remote == null) ?: localNewerThanRemote(local, remote)
+        }
+
+        return filesForUpload
+    }
+
+    private suspend fun remoteFilesForPull(
+
+    ) {
+
     }
 
     suspend fun sync() {
-        sendFiles(remoteLocalCompare())
+        val remote: DirectoryNodesResponse? = try {
+            httpClient.get("/tree").body()
+        } catch (e: Exception) {
+            null
+        }
+        if (remote != null) {
+            val local = directoryFilesList()
+
+            // pullFiles(remoteFilesForPull(local, remote.files))
+            uploadFiles(localFilesForUpload(local, remote.files).map { it.path })
+        }
     }
 }
 

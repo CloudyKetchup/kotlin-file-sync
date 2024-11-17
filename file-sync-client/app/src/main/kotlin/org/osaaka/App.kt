@@ -31,8 +31,9 @@ fun main() = runBlocking {
 	initiateEnvironment()
 
     val synchronization = Synchronization(syncFolder)
-//	delayTask(10000) {
-//		syncDirectory()
-//	}
-    synchronization.sync()
+
+	// delayTask(10000) {
+	// 	synchronization.sync()
+	// }
+	synchronization.sync()
 }
