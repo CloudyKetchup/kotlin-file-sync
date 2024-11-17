@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 import org.koin.ktor.ext.inject
 import org.osaaka.models.DirectoryTreeNode
 import org.osaaka.models.DirectoryNodesResponse
+import org.osaaka.extensions.basicFileAttributes
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.attribute.BasicFileAttributes
@@ -112,6 +113,3 @@ private fun List<ByteArray>.flattenToBytes(): ByteArray {
         output.toByteArray()
     }
 }
-
-fun File.basicFileAttributes(): BasicFileAttributes =
-    Files.readAttributes(this.toPath(), BasicFileAttributes::class.java)
