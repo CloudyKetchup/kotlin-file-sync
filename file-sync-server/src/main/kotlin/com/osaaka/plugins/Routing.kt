@@ -120,6 +120,9 @@ fun Route.fileSync() {
                         // Display the progress bar
                         print("\r$progressBar [$index/$totalFiles]")
                     }
+                    if (totalFiles > 0) {
+                        send(Frame.Text("End"))
+                    }
                 }
                 else -> Unit
             }

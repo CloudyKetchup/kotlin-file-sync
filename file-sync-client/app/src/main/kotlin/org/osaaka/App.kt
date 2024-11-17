@@ -1,22 +1,19 @@
 package org.osaaka
 
 import kotlinx.coroutines.*
+import org.osaaka.http.HttpService
+import org.osaaka.service.FileService
+import org.osaaka.synchronization.SyncManager
 import java.io.File
-import org.osaaka.synchronization.Synchronization
+import org.osaaka.tracker.ProgressTracker
 
-const val tempFolder = "temp"
 val syncFolder = "${System.getProperty("user.home")}/file-sync-test/test"
 
 fun initiateEnvironment() {
 	val folder = File(syncFolder)
-	val temp = File(tempFolder)
 
 	if (!folder.exists()) {
 		println("Folder $syncFolder does not exist")
-	}
-	if (!temp.exists()) {
-		println("Creating temp folder...")
-		temp.mkdir()
 	}
 }
 
@@ -30,10 +27,11 @@ suspend fun delayTask(delayTime: Long, task: suspend () -> Unit) {
 fun main() = runBlocking {
 	initiateEnvironment()
 
-    val synchronization = Synchronization(syncFolder)
+    val synchronization = SyncManager(
+		HttpService("0.0.0.0", 8080),
+		FileService(syncFolder),
+		ProgressTracker()
+	)
 
-	// delayTask(10000) {
-	// 	synchronization.sync()
-	// }
 	synchronization.sync()
 }
